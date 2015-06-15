@@ -108,29 +108,30 @@ if [ $? -ne 0 ];then echo "INSTALL FAILED"; exit 1; fi
 cd ../../..
 
 # create a simple post install script to automatically setup sym links for tomcat
-#TODO - add support for openjdk
+#TODO - verify that this is only needed for oracles java
 echo "# Oracle JRE
 if [ -d /usr/java/default/lib/amd64 ];then
-  ln -s /usr/lib/libtcnative-1.so.0 /usr/java/default/lib/amd64/libtcnative-1.so
+  ln -s /usr/lib64/libtcnative-1.so.0 /usr/java/default/lib/amd64/libtcnative-1.so
 fi
 
 # Oracle JDK
 if [ -d /usr/java/default/jre/lib/amd64 ];then
-  ln -s /usr/lib/libtcnative-1.so.0 /usr/java/default/jre/lib/amd64/libtcnative-1.so
+  ln -s /usr/lib64/libtcnative-1.so.0 /usr/java/default/jre/lib/amd64/libtcnative-1.so
 fi" > $$-post.sh
 
 cd $FAKEROOT
 cd ..
+
 # find and delete all empty dirs in $FAKEROOT
 find . -type d -empty -delete
 
-# build the RPM with fpm
+###################################################
+# Build the RPM with fpm
+# (dear fpm guy, you are awesome thank you)
+#
 fpm --url "$URI" --license "$LIC" --provides "$PROV" -p "../$NAME-$V-$RELEASE.$ARCH.rpm" -m "$EMAIL" --no-rpm-sign -v "$V" --iteration "$RELEASE" -a "$ARCH" --after-install "../$$-post.sh" -s dir -t rpm -n "$NAME"  $DEPS  --verbose  --description "$DESC" *
 
 if [ $? -eq 0 ];then
-  echo "I am in $PWD"
-  ls -lah
-
   cd ..
   echo -e "Done!\nCleaning up $FAKEROOT..."
   rm -rf `dirname $FAKEROOT`
@@ -138,4 +139,7 @@ if [ $? -eq 0 ];then
   echo "########################################################"
   echo
   rpm -qpil $NAME-$V-$RELEASE.$ARCH.rpm
+else
+  echo "Something bad happened. Unable to create the RPM. See error above."
+  exit 2
 fi
