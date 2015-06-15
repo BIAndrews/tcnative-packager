@@ -1,0 +1,4 @@
+src-*
+tomcat-native-*-src
+tomcat-native-*-src.tar.gz
+tcnative-*.rpm
